@@ -1,15 +1,23 @@
 import { Link, useLocation } from 'react-router-dom';
-import { MapPin, ShoppingCart, Menu, X, Phone, Settings } from 'lucide-react';
+import { MapPin, ShoppingCart, Menu, X, Phone, Settings, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { useCart } from '@/context/CartContext';
 import { useAdmin } from '@/context/AdminContext';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { items } = useCart();
-  const { currentRole } = useAdmin();
+  const { currentRole, setCurrentRole } = useAdmin();
   const location = useLocation();
   
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -58,14 +66,55 @@ export function Header() {
             <span>+63 912 345 6789</span>
           </a>
 
-          {currentRole !== 'renter' ? (
-            <Link to="/admin">
-              <Button variant="outline" size="sm" className="gap-2">
+          {/* Role Switcher */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
                 <Settings className="h-4 w-4" />
-                <span className="hidden sm:inline">Admin</span>
+                <span className="capitalize">{currentRole.replace('_', ' ')}</span>
+                <ChevronDown className="h-3 w-3" />
               </Button>
-            </Link>
-          ) : (
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Switch Role</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => {
+                  setCurrentRole('renter');
+                  window.location.href = '/';
+                }}
+                className={currentRole === 'renter' ? 'bg-primary/10' : ''}
+              >
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                <span>Renter</span>
+                {currentRole === 'renter' && <span className="ml-auto text-xs font-semibold">Active</span>}
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => {
+                  setCurrentRole('rental_admin');
+                  window.location.href = '/admin';
+                }}
+                className={currentRole === 'rental_admin' ? 'bg-primary/10' : ''}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                <span>Rental Admin</span>
+                {currentRole === 'rental_admin' && <span className="ml-auto text-xs font-semibold">Active</span>}
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => {
+                  setCurrentRole('field_personnel');
+                  window.location.href = '/admin/field-operations';
+                }}
+                className={currentRole === 'field_personnel' ? 'bg-primary/10' : ''}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                <span>Field Personnel</span>
+                {currentRole === 'field_personnel' && <span className="ml-auto text-xs font-semibold">Active</span>}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {currentRole === 'renter' && (
             <Link to="/cart">
               <Button variant="outline" size="sm" className="relative">
                 <ShoppingCart className="h-4 w-4" />

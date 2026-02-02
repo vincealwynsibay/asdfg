@@ -8,6 +8,49 @@ interface LocationCardProps {
   onClick: () => void;
 }
 
+// Helper function to format operating hours
+function formatOperatingHours(operatingHours: Location['operatingHours']): string {
+  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  
+  // Group consecutive days with same hours
+  const groups: Array<{ days: string; hours: string }> = [];
+  let currentGroup: { days: string[]; hours: string } | null = null;
+  
+  days.forEach((day, index) => {
+    const dayHours = operatingHours[day];
+    const hoursStr = dayHours.closed 
+      ? 'Closed' 
+      : `${dayHours.open} - ${dayHours.close}`;
+    
+    if (currentGroup && currentGroup.hours === hoursStr) {
+      currentGroup.days.push(dayNames[index]);
+    } else {
+      if (currentGroup) {
+        groups.push({
+          days: currentGroup.days.length > 1 
+            ? `${currentGroup.days[0]}-${currentGroup.days[currentGroup.days.length - 1]}`
+            : currentGroup.days[0],
+          hours: currentGroup.hours
+        });
+      }
+      currentGroup = { days: [dayNames[index]], hours: hoursStr };
+    }
+  });
+  
+  // Add the last group
+  if (currentGroup) {
+    groups.push({
+      days: currentGroup.days.length > 1 
+        ? `${currentGroup.days[0]}-${currentGroup.days[currentGroup.days.length - 1]}`
+        : currentGroup.days[0],
+      hours: currentGroup.hours
+    });
+  }
+  
+  return groups.map(g => `${g.days}: ${g.hours}`).join(', ');
+}
+
 export function LocationCard({ location, selected, onClick }: LocationCardProps) {
   return (
     <button
@@ -49,7 +92,7 @@ export function LocationCard({ location, selected, onClick }: LocationCardProps)
           </div>
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 shrink-0" />
-            <span>{location.operatingHours}</span>
+            <span>{formatOperatingHours(location.operatingHours)}</span>
           </div>
           <div className="flex items-center gap-2">
             <Phone className="h-4 w-4 shrink-0" />
