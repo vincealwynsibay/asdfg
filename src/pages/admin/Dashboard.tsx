@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAdmin } from '@/context/AdminContext';
-import { useCart } from '@/context/CartContext';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
