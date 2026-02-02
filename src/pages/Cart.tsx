@@ -108,7 +108,7 @@ const Cart = () => {
               {/* Items */}
               {items.map((item) => (
                 <div 
-                  key={`${item.cartType.id}-${item.rentalPeriod}`}
+                  key={item.id}
                   className="p-4 rounded-xl bg-card border border-border"
                 >
                   <div className="flex gap-4">
@@ -132,7 +132,7 @@ const Cart = () => {
                           variant="ghost"
                           size="icon"
                           className="text-muted-foreground hover:text-destructive shrink-0"
-                          onClick={() => removeItem(item.cartType.id)}
+                          onClick={() => removeItem(item.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

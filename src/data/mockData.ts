@@ -1,5 +1,26 @@
-import { Location, CartType } from '@/types/rental';
+import {
+  Location,
+  CartType,
+  OperatingHours,
+  PricingRule,
+  Reservation,
+  RenterProfile,
+  AdminUser,
+  InventoryAllocation,
+} from '@/types/rental';
 
+// ============ DEFAULT OPERATING HOURS ============
+const defaultOperatingHours: OperatingHours = {
+  monday: { open: '08:00', close: '18:00' },
+  tuesday: { open: '08:00', close: '18:00' },
+  wednesday: { open: '08:00', close: '18:00' },
+  thursday: { open: '08:00', close: '18:00' },
+  friday: { open: '08:00', close: '18:00' },
+  saturday: { open: '09:00', close: '20:00' },
+  sunday: { open: '09:00', close: '20:00' },
+};
+
+// ============ LOCATIONS ============
 export const locations: Location[] = [
   {
     id: 'mati-beachside',
@@ -8,8 +29,12 @@ export const locations: Location[] = [
     city: 'Mati',
     state: 'Davao Oriental',
     phone: '+63 912 345 6789',
-    operatingHours: '8:00 AM - 6:00 PM',
+    email: 'beachside@matirental.com',
+    operatingHours: defaultOperatingHours,
     imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+    retailEnabled: true,
+    retailDescription: 'Explore the beautiful Mati coastline with our premium rental fleet.',
+    coordinates: { lat: 7.1833, lng: 126.2167 },
   },
   {
     id: 'downtown-hub',
@@ -18,11 +43,16 @@ export const locations: Location[] = [
     city: 'Mati',
     state: 'Davao Oriental',
     phone: '+63 912 987 6543',
-    operatingHours: '7:00 AM - 8:00 PM',
+    email: 'downtown@matirental.com',
+    operatingHours: defaultOperatingHours,
     imageUrl: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800&q=80',
+    retailEnabled: true,
+    retailDescription: 'Your go-to hub for convenient urban mobility and quick rentals.',
+    coordinates: { lat: 7.1944, lng: 126.2280 },
   },
 ];
 
+// ============ INVENTORY ============
 export const cartTypes: CartType[] = [
   {
     id: 'golf-cart-standard',
@@ -113,5 +143,179 @@ export const cartTypes: CartType[] = [
     available: 15,
     requiresLicense: false,
     minimumAge: 16,
+  },
+];
+
+// ============ PRICING RULES ============
+export const pricingRules: PricingRule[] = [
+  {
+    id: 'pricing-gc-std-daily-1',
+    cartTypeId: 'golf-cart-standard',
+    locationId: 'mati-beachside',
+    startDate: new Date('2026-01-01'),
+    rentalPeriod: 'daily',
+    price: 150,
+    currency: 'USD',
+    enabled: true,
+    priority: 0,
+    createdAt: new Date(),
+  },
+  {
+    id: 'pricing-gc-std-hourly-1',
+    cartTypeId: 'golf-cart-standard',
+    locationId: 'mati-beachside',
+    startDate: new Date('2026-01-01'),
+    rentalPeriod: 'hourly',
+    price: 25,
+    currency: 'USD',
+    enabled: true,
+    priority: 0,
+    createdAt: new Date(),
+  },
+];
+
+// ============ INVENTORY ALLOCATION ============
+export const inventoryAllocations: InventoryAllocation[] = [
+  {
+    id: 'alloc-gc-std-mati',
+    cartTypeId: 'golf-cart-standard',
+    locationId: 'mati-beachside',
+    totalQuantity: 8,
+    reservedQuantity: 0,
+    availableQuantity: 8,
+    maintenanceQuantity: 0,
+    lastUpdated: new Date(),
+  },
+  {
+    id: 'alloc-gc-std-downtown',
+    cartTypeId: 'golf-cart-standard',
+    locationId: 'downtown-hub',
+    totalQuantity: 5,
+    reservedQuantity: 0,
+    availableQuantity: 5,
+    maintenanceQuantity: 0,
+    lastUpdated: new Date(),
+  },
+  {
+    id: 'alloc-gc-prem-mati',
+    cartTypeId: 'golf-cart-premium',
+    locationId: 'mati-beachside',
+    totalQuantity: 4,
+    reservedQuantity: 0,
+    availableQuantity: 4,
+    maintenanceQuantity: 0,
+    lastUpdated: new Date(),
+  },
+  {
+    id: 'alloc-scooter-std-mati',
+    cartTypeId: 'scooter-standard',
+    locationId: 'mati-beachside',
+    totalQuantity: 12,
+    reservedQuantity: 0,
+    availableQuantity: 12,
+    maintenanceQuantity: 0,
+    lastUpdated: new Date(),
+  },
+  {
+    id: 'alloc-ebike-mati',
+    cartTypeId: 'ebike-cruiser',
+    locationId: 'mati-beachside',
+    totalQuantity: 15,
+    reservedQuantity: 0,
+    availableQuantity: 15,
+    maintenanceQuantity: 0,
+    lastUpdated: new Date(),
+  },
+];
+
+// ============ RENTER PROFILES ============
+export const renterProfiles: RenterProfile[] = [
+  {
+    id: 'renter-001',
+    email: 'vince@example.com',
+    firstName: 'Vince',
+    lastName: 'Alwyn',
+    phone: '+63 912 123 4567',
+    companyName: 'Tech Startup',
+    dateOfBirth: '1990-05-15',
+    driversLicenseNumber: 'DL123456789',
+    driversLicenseExpiry: '2027-12-31',
+    address: '789 Beach Road',
+    city: 'Mati',
+    state: 'Davao Oriental',
+    zipCode: '8200',
+    createdAt: new Date('2025-01-01'),
+    updatedAt: new Date('2025-01-01'),
+  },
+];
+
+// ============ ADMIN USERS ============
+export const adminUsers: AdminUser[] = [
+  {
+    id: 'admin-001',
+    email: 'admin@matirental.com',
+    firstName: 'John',
+    lastName: 'Manager',
+    role: 'rental_admin',
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+  },
+  {
+    id: 'field-001',
+    email: 'field@matirental.com',
+    firstName: 'Maria',
+    lastName: 'Field',
+    role: 'field_personnel',
+    locationId: 'mati-beachside',
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+  },
+];
+
+// ============ RESERVATIONS ============
+export const reservations: Reservation[] = [
+  {
+    id: 'res-001',
+    confirmationNumber: 'CONF-001-2026',
+    locationId: 'mati-beachside',
+    reservationItems: [
+      {
+        id: 'res-item-001',
+        cartTypeId: 'golf-cart-standard',
+        rentalPeriod: 'daily',
+        rentalStartDatetime: new Date('2026-02-05T08:00:00'),
+        rentalEndDatetime: new Date('2026-02-07T08:00:00'),
+        rentalQuantity: 2,
+        baseRate: 150,
+        pricingBreakdown: {
+          basePrice: 150,
+          rentalPeriodPrice: 300,
+          quantity: 2,
+          subtotal: 300,
+          taxAmount: 30,
+          total: 330,
+        },
+        status: 'confirmed',
+      },
+    ],
+    customerInfo: {
+      firstName: 'Vince',
+      lastName: 'Alwyn',
+      email: 'vince@example.com',
+      phone: '+63 912 123 4567',
+    },
+    renterProfileId: 'renter-001',
+    delivery: {
+      type: 'pickup',
+      instructions: 'Meet at main entrance',
+    },
+    subtotal: 300,
+    deliveryFee: 0,
+    taxes: 30,
+    total: 330,
+    status: 'confirmed',
+    paymentStatus: 'succeeded',
+    createdAt: new Date('2026-01-15'),
+    updatedAt: new Date('2026-01-15'),
   },
 ];

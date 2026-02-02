@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   CheckCircle2, 
   Calendar, 
@@ -7,31 +7,57 @@ import {
   Mail, 
   Download,
   Share2,
-  Home
+  Home,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { format, addDays } from 'date-fns';
+import { format } from 'date-fns';
+import { ReservationService, CartTypeService, LocationService } from '@/services/localStorage';
+import { useEffect, useState } from 'react';
+import { Reservation, CartType, Location } from '@/types/rental';
 
 const Confirmation = () => {
   const { confirmationNumber } = useParams();
+  const navigate = useNavigate();
+  const [reservation, setReservation] = useState<Reservation | null>(null);
+  const [cartTypes, setCartTypes] = useState<Record<string, CartType>>({});
+  const [location, setLocation] = useState<Location | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock reservation data - in real app would fetch from backend
-  const reservation = {
-    confirmationNumber: confirmationNumber || 'RR-DEMO123',
-    pickupDate: addDays(new Date(), 1),
-    returnDate: addDays(new Date(), 3),
-    location: {
-      name: 'Mati Beachside Rentals',
-      address: '123 Ocean Drive, Mati',
-      phone: '+63 912 345 6789',
-    },
-    items: [
-      { name: 'Golf Cart - Standard', quantity: 1, price: 300 },
-    ],
-    total: 336,
-  };
+  useEffect(() => {
+    if (!confirmationNumber) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = ReservationService.getByConfirmationNumber(confirmationNumber);
+      if (res) {
+        setReservation(res);
+        
+        // Load cart types and location
+        const types: Record<string, CartType> = {};
+        res.reservationItems.forEach((item) => {
+          const cartType = CartTypeService.getById(item.cartTypeId);
+          if (cartType) {
+            types[item.cartTypeId] = cartType;
+          }
+        });
+        setCartTypes(types);
+
+        const loc = LocationService.getById(res.locationId);
+        if (loc) {
+          setLocation(loc);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load reservation:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [confirmationNumber]);
 
   return (
     <div className="min-h-screen flex flex-col">

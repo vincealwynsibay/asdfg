@@ -1,13 +1,15 @@
 import { Link, useLocation } from 'react-router-dom';
-import { MapPin, ShoppingCart, Menu, X, Phone } from 'lucide-react';
+import { MapPin, ShoppingCart, Menu, X, Phone, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { useCart } from '@/context/CartContext';
+import { useAdmin } from '@/context/AdminContext';
 import { cn } from '@/lib/utils';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { items } = useCart();
+  const { currentRole } = useAdmin();
   const location = useLocation();
   
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -56,17 +58,26 @@ export function Header() {
             <span>+63 912 345 6789</span>
           </a>
 
-          <Link to="/cart">
-            <Button variant="outline" size="sm" className="relative">
-              <ShoppingCart className="h-4 w-4" />
-              <span className="ml-2 hidden sm:inline">Cart</span>
-              {itemCount > 0 && (
-                <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
-                  {itemCount}
-                </span>
-              )}
-            </Button>
-          </Link>
+          {currentRole !== 'renter' ? (
+            <Link to="/admin">
+              <Button variant="outline" size="sm" className="gap-2">
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Admin</span>
+              </Button>
+            </Link>
+          ) : (
+            <Link to="/cart">
+              <Button variant="outline" size="sm" className="relative">
+                <ShoppingCart className="h-4 w-4" />
+                <span className="ml-2 hidden sm:inline">Cart</span>
+                {itemCount > 0 && (
+                  <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+                    {itemCount}
+                  </span>
+                )}
+              </Button>
+            </Link>
+          )}
 
           <Button
             variant="ghost"

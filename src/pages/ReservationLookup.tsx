@@ -1,18 +1,25 @@
 import { useState } from 'react';
-import { Search, Calendar, MapPin, Clock, AlertCircle } from 'lucide-react';
+import { Search, Calendar, MapPin, Clock, AlertCircle, Trash2, Edit3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { format, addDays } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import { useAdmin } from '@/context/AdminContext';
 
 const ReservationLookup = () => {
+  const { reservations, cancelReservation } = useAdmin();
   const [confirmationNumber, setConfirmationNumber] = useState('');
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [reservation, setReservation] = useState<any | null>(null);
+  const [foundReservation, setFoundReservation] = useState<typeof reservations[0] | null>(null);
   const [error, setError] = useState('');
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancellationReason, setCancellationReason] = useState('');
 
   const handleLookup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,32 +29,31 @@ const ReservationLookup = () => {
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // Mock response - in real app would fetch from backend
-    if (confirmationNumber.toUpperCase() === 'DEMO123') {
-      setReservation({
-        confirmationNumber: 'RR-DEMO123',
-        status: 'confirmed',
-        pickupDate: addDays(new Date(), 1),
-        returnDate: addDays(new Date(), 3),
-        location: {
-          name: 'Mati Beachside Rentals',
-          address: '123 Ocean Drive, Mati',
-        },
-        items: [
-          { name: 'Golf Cart - Standard', quantity: 1 },
-        ],
-        customer: {
-          name: 'John Doe',
-          email: 'john@example.com',
-        },
-        total: 336,
-      });
+    // Find reservation by confirmation number and email
+    const found = reservations.find(
+      (res) => res.confirmationNumber === confirmationNumber && res.customerInfo.email === email
+    );
+
+    if (found) {
+      setFoundReservation(found);
     } else {
       setError('No reservation found with this confirmation number and email.');
-      setReservation(null);
+      setFoundReservation(null);
     }
 
     setIsLoading(false);
+  };
+
+  const handleCancel = () => {
+    if (foundReservation) {
+      cancelReservation(foundReservation.id);
+      setError('');
+      setFoundReservation(null);
+      setConfirmationNumber('');
+      setEmail('');
+      setShowCancelDialog(false);
+      setCancellationReason('');
+    }
   };
 
   return (
@@ -119,34 +125,40 @@ const ReservationLookup = () => {
             )}
 
             {/* Reservation Details */}
-            {reservation && (
+            {foundReservation && (
               <div className="p-6 rounded-xl bg-card border border-border shadow-card animate-fade-in">
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <p className="text-sm text-muted-foreground">Confirmation Number</p>
-                    <p className="text-xl font-bold font-mono">{reservation.confirmationNumber}</p>
+                    <p className="text-xl font-bold font-mono">{foundReservation.confirmationNumber}</p>
                   </div>
-                  <div className="px-3 py-1 rounded-full bg-success/10 text-success text-sm font-medium capitalize">
-                    {reservation.status}
-                  </div>
+                  <Badge variant={foundReservation.status === 'cancelled' ? 'destructive' : 'default'}>
+                    {foundReservation.status}
+                  </Badge>
+                </div>
+
+                {/* Customer Info */}
+                <div className="mb-6 p-4 rounded-lg bg-muted/50">
+                  <p className="font-medium">{foundReservation.customerInfo.firstName} {foundReservation.customerInfo.lastName}</p>
+                  <p className="text-sm text-muted-foreground">{foundReservation.customerInfo.email}</p>
+                  <p className="text-sm text-muted-foreground">{foundReservation.customerInfo.phone}</p>
                 </div>
 
                 {/* Dates */}
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="flex items-start gap-3">
-                    <Calendar className="h-5 w-5 text-primary shrink-0" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Pick-up</p>
-                      <p className="font-medium">{format(reservation.pickupDate, 'MMM d, yyyy')}</p>
+                  {foundReservation.reservationItems.map((item, idx) => (
+                    <div key={idx} className="flex items-start gap-3">
+                      <Calendar className="h-5 w-5 text-primary shrink-0" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          {item.rentalPeriod === 'daily' ? 'Rental Period' : 'Period'}
+                        </p>
+                        <p className="font-medium text-xs">
+                          {format(new Date(item.rentalStartDatetime), 'MMM d, yyyy')} - {format(new Date(item.rentalEndDatetime), 'MMM d, yyyy')}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Calendar className="h-5 w-5 text-primary shrink-0" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Return</p>
-                      <p className="font-medium">{format(reservation.returnDate, 'MMM d, yyyy')}</p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
 
                 {/* Location */}
@@ -154,39 +166,109 @@ const ReservationLookup = () => {
                   <div className="flex items-start gap-3">
                     <MapPin className="h-5 w-5 text-primary shrink-0" />
                     <div>
-                      <p className="font-medium">{reservation.location.name}</p>
-                      <p className="text-sm text-muted-foreground">{reservation.location.address}</p>
+                      <p className="font-medium">{foundReservation.location?.name || 'Location TBD'}</p>
+                      <p className="text-sm text-muted-foreground">{foundReservation.delivery.type === 'delivery' ? 'Delivery' : 'Pickup'}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Items */}
                 <div className="mb-6">
-                  <h3 className="font-medium mb-2">Your Rental</h3>
-                  {reservation.items.map((item: any, index: number) => (
+                  <h3 className="font-medium mb-2">Your Rental ({foundReservation.reservationItems.length} item{foundReservation.reservationItems.length !== 1 ? 's' : ''})</h3>
+                  {foundReservation.reservationItems.map((item, index) => (
                     <p key={index} className="text-sm text-muted-foreground">
-                      {item.name} × {item.quantity}
+                      Cart Type: {item.cartTypeId} × {item.rentalQuantity} ({item.rentalPeriod})
                     </p>
                   ))}
                 </div>
 
-                {/* Total */}
-                <div className="pt-4 border-t border-border flex justify-between items-center mb-6">
-                  <span className="font-medium">Total</span>
-                  <span className="text-xl font-bold text-primary">${reservation.total.toFixed(2)}</span>
+                {/* Pricing Breakdown */}
+                <div className="space-y-1 mb-6 text-sm">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Subtotal:</span>
+                    <span>${foundReservation.subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Delivery:</span>
+                    <span>${foundReservation.deliveryFee.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Tax:</span>
+                    <span>${foundReservation.taxes.toFixed(2)}</span>
+                  </div>
+                  <div className="pt-2 border-t border-border flex justify-between items-center">
+                    <span className="font-medium">Total</span>
+                    <span className="text-xl font-bold text-primary">${foundReservation.total.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {/* Payment Status */}
+                <div className="mb-6 p-3 rounded-lg bg-blue-50 border border-blue-200 text-sm">
+                  <p className="text-muted-foreground">Payment Status</p>
+                  <Badge variant="secondary">{foundReservation.paymentStatus}</Badge>
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-3">
-                  <Button variant="outline" className="flex-1">
-                    Modify Booking
-                  </Button>
-                  <Button variant="outline" className="flex-1 text-destructive hover:text-destructive">
-                    Cancel Booking
-                  </Button>
-                </div>
+                {foundReservation.status !== 'cancelled' && (
+                  <div className="flex gap-3">
+                    <Button variant="outline" className="flex-1 gap-2" disabled>
+                      <Edit3 className="h-4 w-4" />
+                      Modify (Coming Soon)
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      className="flex-1 gap-2"
+                      onClick={() => setShowCancelDialog(true)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Cancel Booking
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
+
+            {/* Cancel Confirmation Dialog */}
+            <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Cancel Reservation</DialogTitle>
+                </DialogHeader>
+
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Are you sure you want to cancel this reservation? This action cannot be undone.
+                  </p>
+                  
+                  <div>
+                    <Label>Cancellation Reason (Optional)</Label>
+                    <Textarea 
+                      placeholder="Let us know why you're cancelling..."
+                      value={cancellationReason}
+                      onChange={(e) => setCancellationReason(e.target.value)}
+                      className="resize-none"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm">
+                    <p className="font-medium text-blue-900">Refund Policy</p>
+                    <p className="text-xs text-blue-800 mt-1">
+                      Refunds are processed according to your booking's cancellation policy. You will receive an email confirmation once the refund is processed.
+                    </p>
+                  </div>
+                </div>
+
+                <DialogFooter className="gap-2">
+                  <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
+                    Keep Reservation
+                  </Button>
+                  <Button variant="destructive" onClick={handleCancel}>
+                    Cancel Reservation
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </main>

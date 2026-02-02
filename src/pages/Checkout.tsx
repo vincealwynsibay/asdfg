@@ -20,9 +20,10 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCart } from '@/context/CartContext';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { CustomerInfo, DeliveryInfo, CartItem } from '@/types/rental';
+import { CustomerInfo, DeliveryInfo, CartItem, Reservation, ReservationItem, DeliveryAddress } from '@/types/rental';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { ReservationService } from '@/services/localStorage';
 
 type Step = 'delivery' | 'customer' | 'payment' | 'review';
 
@@ -93,13 +94,100 @@ const Checkout = () => {
   };
 
   const handleSubmit = () => {
-    // Generate confirmation number
-    const confirmationNumber = `RR-${Date.now().toString(36).toUpperCase()}`;
-    
-    // In a real app, this would submit to the backend
-    toast.success('Reservation confirmed!');
-    clearCart();
-    navigate(`/confirmation/${confirmationNumber}`);
+    // Generate confirmation and reservation numbers
+    const confirmationNumber = `CONF-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    const reservationId = `RES-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Build reservation items from cart
+    const reservationItems: ReservationItem[] = items.map((cartItem) => {
+      const pricing = cartItem.cartType.pricing;
+      let baseRate = 0;
+
+      switch (cartItem.rentalPeriod) {
+        case 'hourly':
+          baseRate = pricing.hourly || 0;
+          break;
+        case 'daily':
+          baseRate = pricing.daily;
+          break;
+        case 'weekly':
+          baseRate = pricing.weekly || pricing.daily * 7;
+          break;
+        case 'monthly':
+          baseRate = pricing.monthly || pricing.daily * 30;
+          break;
+        default:
+          baseRate = pricing.daily;
+      }
+
+      const itemPrice = getItemPrice(cartItem);
+      const subtotal = itemPrice * cartItem.quantity;
+
+      return {
+        id: `ITEM-${Math.random().toString(36).substr(2, 9)}`,
+        cartTypeId: cartItem.cartType.id,
+        rentalPeriod: cartItem.rentalPeriod,
+        rentalStartDatetime: cartItem.dateRange.startDate,
+        rentalEndDatetime: cartItem.dateRange.endDate,
+        rentalQuantity: cartItem.quantity,
+        baseRate,
+        pricingBreakdown: {
+          basePrice: baseRate,
+          rentalPeriodPrice: itemPrice,
+          quantity: cartItem.quantity,
+          subtotal,
+          total: subtotal,
+        },
+        status: 'confirmed',
+      };
+    });
+
+    // Build delivery address if delivery
+    let deliveryAddress: DeliveryAddress | undefined;
+    if (deliveryInfo.type === 'delivery' && deliveryInfo.address) {
+      deliveryAddress = {
+        id: `ADDR-${Math.random().toString(36).substr(2, 9)}`,
+        street: deliveryInfo.address,
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'PH',
+        instructions: deliveryInfo.instructions,
+      };
+    }
+
+    // Create reservation object
+    const reservation: Reservation = {
+      id: reservationId,
+      confirmationNumber,
+      locationId: selectedLocation?.id || '',
+      reservationItems,
+      customerInfo,
+      delivery: {
+        type: deliveryInfo.type,
+        address: deliveryAddress,
+        timeWindow: deliveryInfo.timeWindow,
+      },
+      subtotal,
+      deliveryFee: deliveryInfo.type === 'delivery' ? 100 : 0,
+      taxes,
+      total,
+      status: 'confirmed',
+      paymentStatus: 'succeeded',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    // Save to local storage
+    try {
+      ReservationService.create(reservation);
+      toast.success('Reservation confirmed!');
+      clearCart();
+      navigate(`/confirmation/${confirmationNumber}`);
+    } catch (error) {
+      console.error('Failed to create reservation:', error);
+      toast.error('Failed to confirm reservation. Please try again.');
+    }
   };
 
   const isStepValid = (step: Step) => {
@@ -363,7 +451,7 @@ const Checkout = () => {
                     <div className="space-y-3">
                       {items.map((item) => (
                         <div 
-                          key={`${item.cartType.id}-${item.rentalPeriod}`}
+                          key={item.id}
                           className="flex items-center gap-4 p-3 rounded-lg bg-muted/50"
                         >
                           <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted shrink-0">
