@@ -1,25 +1,45 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, Shield, Sparkles, ArrowRight } from 'lucide-react';
+import { MapPin, Calendar, Shield, Sparkles, ArrowRight, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LocationCard } from '@/components/ui/location-card';
 import { locations } from '@/data/mockData';
 import { useCart } from '@/context/CartContext';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const Index = () => {
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
+  const [startDate, setStartDate] = useState('');
+  const [startTime, setStartTime] = useState('09:00');
+  const [endDate, setEndDate] = useState('');
+  const [endTime, setEndTime] = useState('17:00');
   const { setLocation } = useCart();
   const navigate = useNavigate();
 
   const handleContinue = () => {
     const location = locations.find(l => l.id === selectedLocationId);
-    if (location) {
+    if (location && startDate && endDate) {
       setLocation(location);
+      // Pass dates through URL or context
+      sessionStorage.setItem('rentalStartDate', startDate);
+      sessionStorage.setItem('rentalStartTime', startTime);
+      sessionStorage.setItem('rentalEndDate', endDate);
+      sessionStorage.setItem('rentalEndTime', endTime);
       navigate('/browse');
     }
   };
+
+  const isFormValid = selectedLocationId && startDate && endDate && new Date(`${endDate}T${endTime}`) > new Date(`${startDate}T${startTime}`);
 
   const features = [
     {
@@ -44,36 +64,131 @@ const Index = () => {
       <Header />
       
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="relative overflow-hidden gradient-hero">
+        {/* Hero Section with Search */}
+        <section className="relative overflow-hidden gradient-hero min-h-screen flex items-center">
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute -top-1/2 -right-1/4 w-[800px] h-[800px] rounded-full bg-primary/5 blur-3xl" />
             <div className="absolute -bottom-1/2 -left-1/4 w-[600px] h-[600px] rounded-full bg-primary/5 blur-3xl" />
           </div>
           
-          <div className="container relative py-16 md:py-24 lg:py-32">
-            <div className="max-w-3xl mx-auto text-center space-y-6 animate-fade-up">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                <Sparkles className="h-4 w-4" />
-                <span>Explore with freedom</span>
+          <div className="container relative">
+            <div className="max-w-4xl mx-auto">
+              {/* Heading */}
+              <div className="text-center mb-12 animate-fade-up">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+                  <Sparkles className="h-4 w-4" />
+                  <span>Explore with freedom</span>
+                </div>
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-balance mb-4">
+                  Rent Golf Carts, Scooters & E-Bikes
+                </h1>
+                <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto text-balance">
+                  Discover Mati your way. Easy online booking, competitive rates, and vehicles ready for your adventure.
+                </p>
               </div>
-              
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-balance">
-                Rent Golf Carts, Scooters & E-Bikes
-              </h1>
-              
-              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto text-balance">
-                Discover Mati your way. Easy online booking, competitive rates, and top-quality vehicles for your adventure.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                <Button size="lg" className="gradient-primary w-full sm:w-auto" onClick={() => document.getElementById('locations')?.scrollIntoView({ behavior: 'smooth' })}>
-                  Start Booking
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="lg" className="w-full sm:w-auto" onClick={() => navigate('/reservation-lookup')}>
-                  Find My Reservation
-                </Button>
+
+              {/* Search Card */}
+              <div className="bg-card border border-border rounded-2xl shadow-xl p-8 md:p-10 animate-fade-up">
+                <h2 className="text-xl font-semibold mb-6">Find Your Perfect Rental</h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  {/* Location */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      Pickup Location
+                    </Label>
+                    <Select value={selectedLocationId || ''} onValueChange={setSelectedLocationId}>
+                      <SelectTrigger className="h-12">
+                        <SelectValue placeholder="Select a location..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {locations.map((loc) => (
+                          <SelectItem key={loc.id} value={loc.id}>
+                            {loc.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Start Date */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      Start Date
+                    </Label>
+                    <Input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="h-12"
+                    />
+                  </div>
+
+                  {/* Start Time */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-primary" />
+                      Start Time
+                    </Label>
+                    <Input
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      className="h-12"
+                    />
+                  </div>
+
+                  {/* End Date */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      End Date
+                    </Label>
+                    <Input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      min={startDate}
+                      className="h-12"
+                    />
+                  </div>
+
+                  {/* End Time */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-primary" />
+                      End Time
+                    </Label>
+                    <Input
+                      type="time"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      className="h-12"
+                    />
+                  </div>
+                </div>
+
+                {/* Search Button */}
+                <div className="flex gap-3">
+                  <Button 
+                    size="lg" 
+                    className="gradient-primary flex-1"
+                    onClick={handleContinue}
+                    disabled={!isFormValid}
+                  >
+                    Search Vehicles
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                    onClick={() => navigate('/reservation-lookup')}
+                  >
+                    Find Reservation
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -100,37 +215,7 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Location Selection */}
-        <section id="locations" className="py-16 md:py-24">
-          <div className="container">
-            <div className="max-w-2xl mx-auto text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Choose Your Pickup Location</h2>
-              <p className="text-muted-foreground">
-                Select a location to see available vehicles and start your booking.
-              </p>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-              {locations.map((location) => (
-                <LocationCard
-                  key={location.id}
-                  location={location}
-                  selected={selectedLocationId === location.id}
-                  onClick={() => setSelectedLocationId(location.id)}
-                />
-              ))}
-            </div>
-
-            {selectedLocationId && (
-              <div className="mt-8 flex justify-center animate-fade-up">
-                <Button size="lg" className="gradient-primary" onClick={handleContinue}>
-                  Continue to Browse Vehicles
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            )}
-          </div>
-        </section>
       </main>
 
       <Footer />
